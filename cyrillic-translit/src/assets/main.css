@@ -1,1 +1,12 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Editor dark mode overrides */
+.dark .p-editor,
+.dark .p-editor-content,
+.dark .p-editor-content .ql-editor,
+.dark .ql-container,
+.dark .ql-container.ql-snow {
+  background-color: rgb(17 24 39) !important;
+}
