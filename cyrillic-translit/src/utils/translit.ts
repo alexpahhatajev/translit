@@ -35,7 +35,10 @@ const multiCharMap: Record<string, string> = {
   'KH': 'Х',
   'ja': 'я',
   'Ja': 'Я',
-  'JA': 'Я'
+  'JA': 'Я',
+  'ju': 'ю',
+  'Ju': 'Ю',
+  'JU': 'Ю'
 }
 
 const singleCharMap: Record<string, string> = {

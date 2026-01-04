@@ -17,72 +17,72 @@ onMounted(() => {
 
 const onEditorLoad = (event: EditorLoadEvent) => {
   const quill = event.instance
-  quill.format('font', 'serif')
-  quill.format('header', 2)
+
+  // Default format to apply to all text
+  const defaultFormat = { font: 'serif' }
 
   quill.on('text-change', (delta: any, _oldDelta: any, source: string) => {
     // Save content to localStorage on any change
     const html = quill.getSemanticHTML()
     localStorage.setItem(STORAGE_KEY, html)
+
     if (source === 'user') {
-      // Handle transliteration for inserted text
+      // Calculate insert position from delta ops
+      let insertPos = 0
       const ops = delta.ops || []
+
       for (const op of ops) {
+        if (op.retain) {
+          insertPos = op.retain
+        }
+
         if (op.insert && typeof op.insert === 'string') {
           const insertedText = op.insert
-          const selection = quill.getSelection()
+          const editorText = quill.getText()
 
-          if (selection && insertedText.length === 1) {
+          if (insertedText.length === 1) {
             // Single character typed - check for multi-char sequence
-            const cursorPos = selection.index
-            const editorText = quill.getText()
-
-            // Get up to 3 previous characters
-            const prevChars = editorText.slice(Math.max(0, cursorPos - 4), cursorPos - 1)
+            // Get up to 3 previous characters (before the inserted char)
+            const prevChars = editorText.slice(Math.max(0, insertPos - 3), insertPos)
 
             // Try to form a multi-char sequence
             const multiResult = tryMultiCharTranslit(prevChars, insertedText)
 
             if (multiResult) {
               // Delete previous chars + new char, insert the combined result
-              const deleteStart = cursorPos - 1 - multiResult.charsToDelete
+              const deleteStart = insertPos - multiResult.charsToDelete
               const deleteLength = multiResult.charsToDelete + 1
 
               quill.deleteText(deleteStart, deleteLength, 'silent')
-              quill.insertText(deleteStart, multiResult.result, 'silent')
+              quill.insertText(deleteStart, multiResult.result, defaultFormat, 'silent')
               quill.setSelection(deleteStart + multiResult.result.length, 0, 'silent')
             } else {
               // No multi-char match, just transliterate the single char
               const transliterated = transliterate(insertedText)
               if (transliterated !== insertedText) {
-                const insertIndex = cursorPos - 1
-                quill.deleteText(insertIndex, 1, 'silent')
-                quill.insertText(insertIndex, transliterated, 'silent')
-                quill.setSelection(insertIndex + transliterated.length, 0, 'silent')
+                quill.deleteText(insertPos, 1, 'silent')
+                quill.insertText(insertPos, transliterated, defaultFormat, 'silent')
+                quill.setSelection(insertPos + transliterated.length, 0, 'silent')
               }
             }
-          } else if (selection && insertedText.length > 1) {
+          } else if (insertedText.length > 1) {
             // Multiple characters (e.g., paste) - transliterate the whole thing
             const transliterated = transliterate(insertedText)
             if (transliterated !== insertedText) {
-              const insertIndex = selection.index - insertedText.length
-              quill.deleteText(insertIndex, insertedText.length, 'silent')
-              quill.insertText(insertIndex, transliterated, 'silent')
-              quill.setSelection(insertIndex + transliterated.length, 0, 'silent')
+              quill.deleteText(insertPos, insertedText.length, 'silent')
+              quill.insertText(insertPos, transliterated, defaultFormat, 'silent')
+              quill.setSelection(insertPos + transliterated.length, 0, 'silent')
             }
           }
         }
       }
 
-      // Maintain default formatting
+      // Apply default formatting to newly typed text
       const selection = quill.getSelection()
       if (selection) {
-        const format = quill.getFormat(selection.index)
+        const format = quill.getFormat(selection.index > 0 ? selection.index - 1 : 0)
         if (!format.font) {
-          setTimeout(() => quill.format('font', 'serif', 'silent'), 0)
-        }
-        if (!format.header) {
-          setTimeout(() => quill.format('header', 2, 'silent'), 0)
+          quill.formatText(0, quill.getLength(), 'font', 'serif', 'silent')
         }
       }
     }
@@ -117,6 +117,15 @@ const onEditorLoad = (event: EditorLoadEvent) => {
 
 :deep(.p-editor-content .ql-editor) {
   @apply text-gray-900 dark:text-gray-100;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+:deep(.p-editor-content .ql-editor p),
+:deep(.p-editor-content .ql-editor span) {
+  font-family: inherit !important;
+  font-size: inherit !important;
 }
 
 :deep(.p-editor-content .ql-editor.ql-blank::before) {
