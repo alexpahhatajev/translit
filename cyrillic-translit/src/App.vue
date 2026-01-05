@@ -3,8 +3,12 @@ import { onMounted } from 'vue'
 import TextEditor from '@/components/TextEditor.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { useTranslit } from '@/composables/useTranslit'
+import { useSpellCheck } from '@/composables/useSpellCheck'
 
 const { init } = useDarkMode()
+const { translitEnabled, toggle: toggleTranslit } = useTranslit()
+const { spellCheckEnabled, errors, isChecking, toggle: toggleSpellCheck } = useSpellCheck()
 
 onMounted(() => {
   init()
@@ -21,6 +25,46 @@ onMounted(() => {
           <DarkModeToggle />
         </div>
       </div>
+
+      <!-- Status bar -->
+      <div class="mb-4 flex items-center justify-center gap-3 text-sm">
+        <!-- Translit toggle -->
+        <button
+          @click="toggleTranslit"
+          :class="[
+            'px-3 py-1 rounded-full flex items-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            translitEnabled
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+          ]"
+        >
+          <font-awesome-icon :icon="translitEnabled ? 'fa-solid fa-language' : 'fa-solid fa-font'" />
+          <span>Translit: {{ translitEnabled ? 'ON' : 'OFF' }}</span>
+          <span class="text-xs opacity-70">(F1)</span>
+        </button>
+
+        <!-- Spell check toggle -->
+        <button
+          @click="toggleSpellCheck"
+          :class="[
+            'px-3 py-1 rounded-full flex items-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            spellCheckEnabled
+              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+          ]"
+        >
+          <font-awesome-icon
+            :icon="isChecking ? 'fa-solid fa-spinner' : 'fa-solid fa-spell-check'"
+            :class="{ 'animate-spin': isChecking }"
+          />
+          <span>Spell: {{ spellCheckEnabled ? 'ON' : 'OFF' }}</span>
+          <span v-if="spellCheckEnabled && errors.length > 0" class="bg-red-500 text-white text-xs px-1.5 rounded-full">
+            {{ errors.length }}
+          </span>
+          <span class="text-xs opacity-70">(F2)</span>
+        </button>
+      </div>
+
       <TextEditor />
     </div>
   </div>
