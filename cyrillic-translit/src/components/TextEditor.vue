@@ -6,6 +6,7 @@ import { transliterate, tryMultiCharTranslit } from '@/utils/translit'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
 import { setQuillInstance, useClipboard } from '@/composables/useClipboard'
+import { setTextForStats, useTextStats } from '@/composables/useTextStats'
 import type { SpellerError } from '@/services/yandexSpeller'
 
 const STORAGE_KEY = 'translit-editor-content'
@@ -14,6 +15,7 @@ const showCopiedToast = ref(false)
 const { translitEnabled, toggle: toggleTranslit } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, checkText, toggle: toggleSpellCheck } = useSpellCheck()
 const { copyText } = useClipboard()
+const { charCount, charCountNoSpaces, wordCount, sentenceCount, paragraphCount, lineCount } = useTextStats()
 
 const showSuggestions = ref(false)
 const suggestionPosition = ref({ x: 0, y: 0 })
@@ -130,6 +132,9 @@ const onEditorLoad = (event: EditorLoadEvent) => {
   const defaultFormat = { font: 'serif' }
 
   setTimeout(() => {
+    const plainText = quill.getText().trim()
+    setTextForStats(plainText)
+
     if (spellCheckEnabled.value) {
       checkText(quill.getText())
     }
@@ -138,6 +143,9 @@ const onEditorLoad = (event: EditorLoadEvent) => {
   quill.on('text-change', (delta: any, _oldDelta: any, source: string) => {
     const html = quill.getSemanticHTML()
     localStorage.setItem(STORAGE_KEY, html)
+
+    const plainText = quill.getText().trim()
+    setTextForStats(plainText)
 
     if (spellCheckEnabled.value) {
       checkText(quill.getText())
@@ -254,6 +262,35 @@ const onEditorLoad = (event: EditorLoadEvent) => {
       class="fixed inset-0 z-40"
       @click="closeSuggestions"
     ></div>
+
+    <div class="mt-3 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-text-width" class="text-blue-500 text-xs" />
+          <span>{{ wordCount }} words</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-font" class="text-green-500 text-xs" />
+          <span>{{ charCount }} chars</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-text-slash" class="text-purple-500 text-xs" />
+          <span>{{ charCountNoSpaces }} no spaces</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-comment-dots" class="text-orange-500 text-xs" />
+          <span>{{ sentenceCount }} sentences</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-paragraph" class="text-pink-500 text-xs" />
+          <span>{{ paragraphCount }} paragraphs</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <font-awesome-icon icon="fa-solid fa-list" class="text-cyan-500 text-xs" />
+          <span>{{ lineCount }} lines</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

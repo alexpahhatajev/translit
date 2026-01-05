@@ -35,7 +35,10 @@ onMounted(() => {
     <div class="max-w-4xl mx-auto px-4">
       <div class="flex items-center justify-between py-8">
         <div class="w-32"></div>
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100">TRANSLIT</h1>
+        <div class="flex items-center gap-3">
+          <img src="/favicon.svg" alt="Translit logo" class="w-10 h-10 logo-spin" />
+          <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100">TRANSLIT</h1>
+        </div>
         <div class="w-32 flex justify-end">
           <DarkModeToggle />
         </div>
@@ -117,5 +120,22 @@ onMounted(() => {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-10px);
+}
+
+.logo-spin {
+  cursor: pointer;
+}
+
+.logo-spin:hover {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
