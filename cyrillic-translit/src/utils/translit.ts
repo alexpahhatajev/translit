@@ -3,6 +3,10 @@ const multiCharMap: Record<string, string> = {
   'shch': 'щ',
   'Shch': 'Щ',
   'SHCH': 'Щ',
+  'shh': 'щ',
+  'Shh': 'Щ',
+  'SHh': 'Щ',
+  'SHH': 'Щ',
   'sh': 'ш',
   'Sh': 'Ш',
   'SH': 'Ш',
@@ -67,7 +71,6 @@ const singleCharMap: Record<string, string> = {
   'w': 'в',
   'x': 'кс',
   'y': 'ы',
-  // Uppercase
   'A': 'А',
   'B': 'Б',
   'V': 'В',
@@ -103,6 +106,15 @@ const reverseSingleCharMap: Record<string, string> = {}
 for (const [latin, cyrillic] of Object.entries(singleCharMap)) {
   if (cyrillic.length === 1) {
     reverseSingleCharMap[cyrillic] = latin
+  }
+}
+
+const reverseMultiCharMap: Record<string, string> = {}
+for (const [latin, cyrillic] of Object.entries(multiCharMap)) {
+  if (latin === latin.toLowerCase()) {
+    if (!reverseMultiCharMap[cyrillic] || latin.length < reverseMultiCharMap[cyrillic].length) {
+      reverseMultiCharMap[cyrillic] = latin
+    }
   }
 }
 
@@ -146,37 +158,61 @@ export function tryMultiCharTranslit(
   for (let lookback = Math.min(3, prevChars.length); lookback >= 1; lookback--) {
     const prevCyrillic = prevChars.slice(-lookback)
 
-    let latinPrefix = ''
-    let validPrefix = true
+    const latinPrefixes: string[] = []
+
+    let singleLatinPrefix = ''
+    let validSinglePrefix = true
     for (const c of prevCyrillic) {
       const latin = reverseSingleCharMap[c]
       if (latin) {
-        latinPrefix += latin
+        singleLatinPrefix += latin
       } else {
-        validPrefix = false
+        validSinglePrefix = false
         break
       }
     }
+    if (validSinglePrefix) {
+      latinPrefixes.push(singleLatinPrefix)
+    }
 
-    if (!validPrefix) continue
-
-    const combined = latinPrefix + newChar
-    for (const key of sortedMultiKeys) {
-      if (combined === key || combined.toLowerCase() === key.toLowerCase()) {
-        if (multiCharMap[combined]) {
-          return { result: multiCharMap[combined], charsToDelete: lookback }
-        }
-        if (multiCharMap[key]) {
-          return { result: multiCharMap[key], charsToDelete: lookback }
+    let multiLatinPrefix = ''
+    let validMultiPrefix = true
+    for (const c of prevCyrillic) {
+      const multiLatin = reverseMultiCharMap[c]
+      if (multiLatin) {
+        multiLatinPrefix += multiLatin
+      } else {
+        const latin = reverseSingleCharMap[c]
+        if (latin) {
+          multiLatinPrefix += latin
+        } else {
+          validMultiPrefix = false
+          break
         }
       }
-      // Check if combined starts with the key
-      if (key.length <= combined.length && combined.slice(0, key.length).toLowerCase() === key.toLowerCase()) {
-        const matchKey = Object.keys(multiCharMap).find(k => k.toLowerCase() === combined.slice(0, key.length).toLowerCase())
-        if (matchKey) {
-          const remainder = combined.slice(key.length)
-          const transliteratedRemainder = remainder ? transliterate(remainder) : ''
-          return { result: multiCharMap[matchKey] + transliteratedRemainder, charsToDelete: lookback }
+    }
+    if (validMultiPrefix && multiLatinPrefix !== singleLatinPrefix) {
+      latinPrefixes.push(multiLatinPrefix)
+    }
+
+    for (const latinPrefix of latinPrefixes) {
+      const combined = latinPrefix + newChar
+      for (const key of sortedMultiKeys) {
+        if (combined === key || combined.toLowerCase() === key.toLowerCase()) {
+          if (multiCharMap[combined]) {
+            return { result: multiCharMap[combined], charsToDelete: lookback }
+          }
+          if (multiCharMap[key]) {
+            return { result: multiCharMap[key], charsToDelete: lookback }
+          }
+        }
+        if (key.length <= combined.length && combined.slice(0, key.length).toLowerCase() === key.toLowerCase()) {
+          const matchKey = Object.keys(multiCharMap).find(k => k.toLowerCase() === combined.slice(0, key.length).toLowerCase())
+          if (matchKey) {
+            const remainder = combined.slice(key.length)
+            const transliteratedRemainder = remainder ? transliterate(remainder) : ''
+            return { result: multiCharMap[matchKey] + transliteratedRemainder, charsToDelete: lookback }
+          }
         }
       }
     }

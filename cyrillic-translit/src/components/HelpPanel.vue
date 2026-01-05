@@ -1,7 +1,21 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, onMounted, watch } from 'vue'
+
+const STORAGE_KEY = 'translit-help-sections'
 
 const openSections = reactive(new Set<string>())
+
+onMounted(() => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    const sections = JSON.parse(saved) as string[]
+    sections.forEach(section => openSections.add(section))
+  }
+})
+
+watch(openSections, () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...openSections]))
+}, { deep: true })
 
 const toggleSection = (section: string) => {
   if (openSections.has(section)) {
@@ -13,9 +27,8 @@ const toggleSection = (section: string) => {
 
 const isOpen = (section: string) => openSections.has(section)
 
-// Multi-character rules (lowercase only for display)
 const multiCharRules = [
-  { latin: 'shch', cyrillic: 'щ' },
+  { latin: 'shh', cyrillic: 'щ' },
   { latin: 'sh', cyrillic: 'ш' },
   { latin: 'ch', cyrillic: 'ч' },
   { latin: 'zh', cyrillic: 'ж' },
@@ -30,7 +43,6 @@ const multiCharRules = [
   { latin: 'je', cyrillic: 'э' },
 ]
 
-// Single character rules
 const singleCharRules = [
   { latin: 'a', cyrillic: 'а' },
   { latin: 'b', cyrillic: 'б' },
@@ -59,13 +71,11 @@ const singleCharRules = [
   { latin: 'y', cyrillic: 'ы' },
 ]
 
-// Special characters
 const specialCharRules = [
   { latin: "'", cyrillic: 'ь', description: 'soft sign' },
   { latin: '"', cyrillic: 'ъ', description: 'hard sign' },
 ]
 
-// Keyboard shortcuts
 const shortcuts = [
   { key: 'F1', description: 'Toggle transliteration ON/OFF' },
   { key: 'F2', description: 'Toggle spell check ON/OFF' },
@@ -75,9 +85,7 @@ const shortcuts = [
 
 <template>
   <div class="w-full max-w-4xl mt-6">
-    <!-- Accordion sections -->
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <!-- Keyboard Shortcuts Section -->
       <div class="border-b border-gray-200 dark:border-gray-700">
           <button
             @click="toggleSection('shortcuts')"
@@ -110,7 +118,6 @@ const shortcuts = [
           </Transition>
         </div>
 
-        <!-- Multi-character Rules Section -->
         <div class="border-b border-gray-200 dark:border-gray-700">
           <button
             @click="toggleSection('multi')"
@@ -118,7 +125,7 @@ const shortcuts = [
           >
             <span class="flex items-center gap-2 text-gray-800 dark:text-gray-200 font-medium">
               <font-awesome-icon icon="fa-solid fa-layer-group" class="text-purple-500" />
-              Multi-character Combinations
+              Multi Character Combinations
             </span>
             <font-awesome-icon
               :icon="isOpen('multi') ? 'fa-solid fa-minus' : 'fa-solid fa-plus'"
@@ -145,7 +152,6 @@ const shortcuts = [
           </Transition>
         </div>
 
-        <!-- Single Character Rules Section -->
         <div class="border-b border-gray-200 dark:border-gray-700">
           <button
             @click="toggleSection('single')"
@@ -180,7 +186,6 @@ const shortcuts = [
           </Transition>
         </div>
 
-        <!-- Special Characters Section -->
         <div>
           <button
             @click="toggleSection('special')"
@@ -219,7 +224,6 @@ const shortcuts = [
 </template>
 
 <style scoped>
-/* Accordion transition for sections */
 .accordion-enter-active,
 .accordion-leave-active {
   transition: all 0.2s ease;

@@ -5,6 +5,7 @@ import Editor from 'primevue/editor'
 import { transliterate, tryMultiCharTranslit } from '@/utils/translit'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
+import { setQuillInstance, useClipboard } from '@/composables/useClipboard'
 import type { SpellerError } from '@/services/yandexSpeller'
 
 const STORAGE_KEY = 'translit-editor-content'
@@ -12,21 +13,18 @@ const text = ref('')
 const showCopiedToast = ref(false)
 const { translitEnabled, toggle: toggleTranslit } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, checkText, toggle: toggleSpellCheck } = useSpellCheck()
+const { copyText } = useClipboard()
 
-// Suggestion popover state
 const showSuggestions = ref(false)
 const suggestionPosition = ref({ x: 0, y: 0 })
 const currentError = ref<SpellerError | null>(null)
 
 let quillInstance: any = null
 
-// Handle keyboard shortcuts
-const handleKeydown = (e: KeyboardEvent) => {
-  // ESC - copy text to clipboard
+const handleKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Escape' && quillInstance) {
-    const plainText = quillInstance.getText().trim()
-    if (plainText) {
-      navigator.clipboard.writeText(plainText)
+    const success = await copyText()
+    if (success) {
       showCopiedToast.value = true
       setTimeout(() => {
         showCopiedToast.value = false
@@ -34,13 +32,11 @@ const handleKeydown = (e: KeyboardEvent) => {
     }
   }
 
-  // F1 - toggle transliteration
   if (e.key === 'F1') {
     e.preventDefault()
     toggleTranslit()
   }
 
-  // F2 - toggle spell check
   if (e.key === 'F2') {
     e.preventDefault()
     toggleSpellCheck()
@@ -52,34 +48,28 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 }
 
-// Apply red underline to spelling errors
 const applySpellCheckHighlights = () => {
   if (!quillInstance || !spellCheckEnabled.value) return
 
-  // First, clear existing highlights
   clearSpellCheckHighlights()
 
-  // Apply underline to each error
   for (const error of errors.value) {
     quillInstance.formatText(error.pos, error.len, 'spellError', true, 'silent')
   }
 }
 
-// Clear all spell check highlights
 const clearSpellCheckHighlights = () => {
   if (!quillInstance) return
   const length = quillInstance.getLength()
   quillInstance.formatText(0, length, 'spellError', false, 'silent')
 }
 
-// Handle click on editor to show suggestions
 const handleEditorClick = (event: MouseEvent) => {
   if (!quillInstance || !spellCheckEnabled.value) return
 
   const selection = quillInstance.getSelection()
   if (!selection) return
 
-  // Find if we clicked on an error
   const clickedError = errors.value.find(
     err => selection.index >= err.pos && selection.index <= err.pos + err.len
   )
@@ -94,7 +84,6 @@ const handleEditorClick = (event: MouseEvent) => {
   }
 }
 
-// Apply suggestion to fix error
 const applySuggestion = (suggestion: string) => {
   if (!quillInstance || !currentError.value) return
 
@@ -106,18 +95,15 @@ const applySuggestion = (suggestion: string) => {
   currentError.value = null
 }
 
-// Close suggestions popover
 const closeSuggestions = () => {
   showSuggestions.value = false
   currentError.value = null
 }
 
-// Watch for error changes and apply highlights
 watch(errors, () => {
   applySpellCheckHighlights()
 }, { deep: true })
 
-// Load saved content on mount
 onMounted(() => {
   const saved = localStorage.getItem(STORAGE_KEY)
   if (saved) {
@@ -133,18 +119,16 @@ onUnmounted(() => {
 const onEditorLoad = (event: EditorLoadEvent) => {
   const quill = event.instance
   quillInstance = quill
+  setQuillInstance(quill)
 
-  // Register custom format for spell errors
   const Parchment = quill.constructor.import('parchment')
   const SpellErrorClass = new Parchment.ClassAttributor('spellError', 'spell-error', {
     scope: Parchment.Scope.INLINE,
   })
   quill.constructor.register(SpellErrorClass, true)
 
-  // Default format to apply to all text
   const defaultFormat = { font: 'serif' }
 
-  // Initial spell check
   setTimeout(() => {
     if (spellCheckEnabled.value) {
       checkText(quill.getText())
@@ -152,17 +136,14 @@ const onEditorLoad = (event: EditorLoadEvent) => {
   }, 500)
 
   quill.on('text-change', (delta: any, _oldDelta: any, source: string) => {
-    // Save content to localStorage on any change
     const html = quill.getSemanticHTML()
     localStorage.setItem(STORAGE_KEY, html)
 
-    // Trigger spell check
     if (spellCheckEnabled.value) {
       checkText(quill.getText())
     }
 
     if (source === 'user' && translitEnabled.value) {
-      // Calculate insert position from delta ops
       let insertPos = 0
       const ops = delta.ops || []
 
@@ -176,15 +157,11 @@ const onEditorLoad = (event: EditorLoadEvent) => {
           const editorText = quill.getText()
 
           if (insertedText.length === 1) {
-            // Single character typed - check for multi-char sequence
-            // Get up to 3 previous characters (before the inserted char)
             const prevChars = editorText.slice(Math.max(0, insertPos - 3), insertPos)
 
-            // Try to form a multi-char sequence
             const multiResult = tryMultiCharTranslit(prevChars, insertedText)
 
             if (multiResult) {
-              // Delete previous chars + new char, insert the combined result
               const deleteStart = insertPos - multiResult.charsToDelete
               const deleteLength = multiResult.charsToDelete + 1
 
@@ -192,7 +169,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
               quill.insertText(deleteStart, multiResult.result, defaultFormat, 'silent')
               quill.setSelection(deleteStart + multiResult.result.length, 0, 'silent')
             } else {
-              // No multi-char match, just transliterate the single char
               const transliterated = transliterate(insertedText)
               if (transliterated !== insertedText) {
                 quill.deleteText(insertPos, 1, 'silent')
@@ -201,7 +177,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
               }
             }
           } else if (insertedText.length > 1) {
-            // Multiple characters (e.g., paste) - transliterate the whole thing
             const transliterated = transliterate(insertedText)
             if (transliterated !== insertedText) {
               quill.deleteText(insertPos, insertedText.length, 'silent')
@@ -212,7 +187,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
         }
       }
 
-      // Apply default formatting to newly typed text
       const selection = quill.getSelection()
       if (selection) {
         const format = quill.getFormat(selection.index > 0 ? selection.index - 1 : 0)
@@ -235,7 +209,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
       </Editor>
     </div>
 
-    <!-- Toast notification -->
     <Transition name="toast">
       <div
         v-if="showCopiedToast"
@@ -246,7 +219,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
       </div>
     </Transition>
 
-    <!-- Spell check suggestions popover -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -277,7 +249,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
       </Transition>
     </Teleport>
 
-    <!-- Click outside to close suggestions -->
     <div
       v-if="showSuggestions"
       class="fixed inset-0 z-40"
@@ -326,14 +297,12 @@ const onEditorLoad = (event: EditorLoadEvent) => {
   @apply border-gray-300 dark:border-gray-700;
 }
 
-/* Spell error underline */
 :deep(.spell-error-true) {
   text-decoration: underline wavy red;
   text-decoration-skip-ink: none;
   cursor: pointer;
 }
 
-/* Toast transition */
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.3s ease;
@@ -345,7 +314,6 @@ const onEditorLoad = (event: EditorLoadEvent) => {
   transform: translateX(-50%) translateY(-10px);
 }
 
-/* Fade transition for suggestions popover */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;

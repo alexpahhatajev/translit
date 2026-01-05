@@ -1,15 +1,29 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import TextEditor from '@/components/TextEditor.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import HelpPanel from '@/components/HelpPanel.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
+import { useClipboard } from '@/composables/useClipboard'
 
 const { init } = useDarkMode()
 const { translitEnabled, toggle: toggleTranslit } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, toggle: toggleSpellCheck } = useSpellCheck()
+const { copyText } = useClipboard()
+
+const showCopiedToast = ref(false)
+
+const handleCopy = async () => {
+  const success = await copyText()
+  if (success) {
+    showCopiedToast.value = true
+    setTimeout(() => {
+      showCopiedToast.value = false
+    }, 2000)
+  }
+}
 
 onMounted(() => {
   init()
@@ -27,13 +41,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Status bar -->
       <div class="mb-4 flex items-center justify-center gap-3 text-sm">
-        <!-- Translit toggle -->
         <button
           @click="toggleTranslit"
           :class="[
-            'px-3 py-1 rounded-full flex items-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            'w-44 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80',
             translitEnabled
               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
               : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
@@ -44,11 +56,10 @@ onMounted(() => {
           <span class="text-xs opacity-70">(F1)</span>
         </button>
 
-        <!-- Spell check toggle -->
         <button
           @click="toggleSpellCheck"
           :class="[
-            'px-3 py-1 rounded-full flex items-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            'w-44 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80',
             spellCheckEnabled
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
               : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -64,17 +75,47 @@ onMounted(() => {
           </span>
           <span class="text-xs opacity-70">(F2)</span>
         </button>
+
+        <button
+          @click="handleCopy"
+          class="w-44 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+        >
+          <font-awesome-icon icon="fa-solid fa-copy" />
+          <span>Copy Text</span>
+          <span class="text-xs opacity-70">(ESC)</span>
+        </button>
       </div>
+
+      <Transition name="toast">
+        <div
+          v-if="showCopiedToast"
+          class="fixed top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50"
+        >
+          <font-awesome-icon icon="fa-solid fa-check" />
+          <span>Copied to clipboard</span>
+        </div>
+      </Transition>
 
       <TextEditor />
 
-      <!-- Help panel with translit rules -->
       <HelpPanel />
 
-      <!-- Footer -->
       <footer class="mt-8 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
         <p>2026 MIT License - Free to use and modify</p>
       </footer>
     </div>
   </div>
 </template>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+</style>
