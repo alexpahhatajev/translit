@@ -79,6 +79,7 @@ const specialCharRules = [
 const shortcuts = [
   { key: 'F1', description: 'Toggle transliteration ON/OFF' },
   { key: 'F2', description: 'Toggle spell check ON/OFF' },
+  { key: 'F3', description: 'Toggle voice dictation (Russian)' },
   { key: 'ESC', description: 'Copy all text to clipboard' },
 ]
 </script>

@@ -94,9 +94,9 @@ const getComboDisplay = (combo: string) => {
 const getComboMapping = (combo: string) => {
   if (shiftActive.value) {
     const upperCombo = combo.charAt(0).toUpperCase() + combo.slice(1)
-    return multiCharMappingsUpper[upperCombo] || multiCharMappings[combo].toUpperCase()
+    return multiCharMappingsUpper[upperCombo] || multiCharMappings[combo]?.toUpperCase() || ''
   }
-  return multiCharMappings[combo]
+  return multiCharMappings[combo] || ''
 }
 
 const handleMultiCharClick = (combo: string) => {
@@ -179,7 +179,7 @@ const handleSpecialClick = (special: { latin: string, cyrillic: string }) => {
       </div>
     </div>
 
-    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+    <div v-if="isLatinToCyrillic" class="pt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">
         Specials
       </div>

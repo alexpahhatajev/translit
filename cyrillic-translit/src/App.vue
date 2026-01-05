@@ -9,11 +9,19 @@ import { useDarkMode } from '@/composables/useDarkMode'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
 import { useClipboard } from '@/composables/useClipboard'
+import { useSpeechRecognition } from '@/composables/useSpeechRecognition'
 
 const { init } = useDarkMode()
 const { translitEnabled, direction, toggle: toggleTranslit, toggleDirection } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, toggle: toggleSpellCheck } = useSpellCheck()
 const { copyText } = useClipboard()
+const {
+  isSupported: micSupported,
+  isListening,
+  transcript,
+  error: micError,
+  toggleListening,
+} = useSpeechRecognition()
 
 const showCopiedToast = ref(false)
 
@@ -96,6 +104,21 @@ onMounted(() => {
         </button>
 
         <button
+          v-if="micSupported"
+          @click="toggleListening"
+          :class="[
+            'w-40 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            isListening
+              ? 'bg-red-500 text-white animate-pulse'
+              : 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
+          ]"
+        >
+          <font-awesome-icon :icon="isListening ? 'fa-solid fa-microphone-slash' : 'fa-solid fa-microphone'" />
+          <span>{{ isListening ? 'Stop' : 'Dictate' }}</span>
+          <span class="text-xs opacity-70">(F3)</span>
+        </button>
+
+        <button
           @click="handleCopy"
           class="w-44 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
         >
@@ -104,6 +127,26 @@ onMounted(() => {
           <span class="text-xs opacity-70">(ESC)</span>
         </button>
       </div>
+
+      <Transition name="toast">
+        <div
+          v-if="isListening && transcript"
+          class="fixed top-16 left-1/2 -translate-x-1/2 bg-pink-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50"
+        >
+          <font-awesome-icon icon="fa-solid fa-microphone" class="animate-pulse" />
+          <span class="italic">{{ transcript }}</span>
+        </div>
+      </Transition>
+
+      <Transition name="toast">
+        <div
+          v-if="micError"
+          class="fixed top-16 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50"
+        >
+          <font-awesome-icon icon="fa-solid fa-exclamation-triangle" />
+          <span>{{ micError }}</span>
+        </div>
+      </Transition>
 
       <Transition name="toast">
         <div

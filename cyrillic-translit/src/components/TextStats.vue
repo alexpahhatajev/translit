@@ -5,8 +5,8 @@ const { charCount, charCountNoSpaces, wordCount, sentenceCount, paragraphCount, 
 </script>
 
 <template>
-  <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-    <div class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+  <div class="px-3 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <div class="flex items-center gap-2 mb-2.5 pb-2 border-b border-gray-200 dark:border-gray-700">
       <font-awesome-icon icon="fa-solid fa-chart-simple" class="text-emerald-500" />
       <span class="font-medium text-gray-800 dark:text-gray-200 text-sm">Statistics</span>
     </div>

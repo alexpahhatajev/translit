@@ -7,6 +7,7 @@ import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
 import { setQuillInstance, useClipboard } from '@/composables/useClipboard'
 import { setTextForStats, useTextStats } from '@/composables/useTextStats'
+import { useSpeechRecognition } from '@/composables/useSpeechRecognition'
 import type { SpellerError } from '@/services/yandexSpeller'
 
 const STORAGE_KEY = 'translit-editor-content'
@@ -16,6 +17,7 @@ const { translitEnabled, direction, toggle: toggleTranslit } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, checkText, toggle: toggleSpellCheck } = useSpellCheck()
 const { copyText } = useClipboard()
 const { charCount, charCountNoSpaces, wordCount, sentenceCount, paragraphCount, lineCount } = useTextStats()
+const { toggleListening } = useSpeechRecognition()
 
 const showSuggestions = ref(false)
 const suggestionPosition = ref({ x: 0, y: 0 })
@@ -47,6 +49,11 @@ const handleKeydown = async (e: KeyboardEvent) => {
     } else {
       clearSpellCheckHighlights()
     }
+  }
+
+  if (e.key === 'F3') {
+    e.preventDefault()
+    toggleListening()
   }
 }
 
