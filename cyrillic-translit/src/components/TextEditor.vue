@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import type { EditorLoadEvent } from 'primevue/editor'
 import Editor from 'primevue/editor'
-import { transliterate, tryMultiCharTranslit } from '@/utils/translit'
+import { transliterate, tryMultiCharTranslit, reverseTransliterate } from '@/utils/translit'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
 import { setQuillInstance, useClipboard } from '@/composables/useClipboard'
@@ -12,7 +12,7 @@ import type { SpellerError } from '@/services/yandexSpeller'
 const STORAGE_KEY = 'translit-editor-content'
 const text = ref('')
 const showCopiedToast = ref(false)
-const { translitEnabled, toggle: toggleTranslit } = useTranslit()
+const { translitEnabled, direction, toggle: toggleTranslit } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, checkText, toggle: toggleSpellCheck } = useSpellCheck()
 const { copyText } = useClipboard()
 const { charCount, charCountNoSpaces, wordCount, sentenceCount, paragraphCount, lineCount } = useTextStats()
@@ -164,32 +164,41 @@ const onEditorLoad = (event: EditorLoadEvent) => {
           const insertedText = op.insert
           const editorText = quill.getText()
 
-          if (insertedText.length === 1) {
-            const prevChars = editorText.slice(Math.max(0, insertPos - 3), insertPos)
+          if (direction.value === 'latin-to-cyrillic') {
+            if (insertedText.length === 1) {
+              const prevChars = editorText.slice(Math.max(0, insertPos - 3), insertPos)
 
-            const multiResult = tryMultiCharTranslit(prevChars, insertedText)
+              const multiResult = tryMultiCharTranslit(prevChars, insertedText)
 
-            if (multiResult) {
-              const deleteStart = insertPos - multiResult.charsToDelete
-              const deleteLength = multiResult.charsToDelete + 1
+              if (multiResult) {
+                const deleteStart = insertPos - multiResult.charsToDelete
+                const deleteLength = multiResult.charsToDelete + 1
 
-              quill.deleteText(deleteStart, deleteLength, 'silent')
-              quill.insertText(deleteStart, multiResult.result, defaultFormat, 'silent')
-              quill.setSelection(deleteStart + multiResult.result.length, 0, 'silent')
-            } else {
+                quill.deleteText(deleteStart, deleteLength, 'silent')
+                quill.insertText(deleteStart, multiResult.result, defaultFormat, 'silent')
+                quill.setSelection(deleteStart + multiResult.result.length, 0, 'silent')
+              } else {
+                const transliterated = transliterate(insertedText)
+                if (transliterated !== insertedText) {
+                  quill.deleteText(insertPos, 1, 'silent')
+                  quill.insertText(insertPos, transliterated, defaultFormat, 'silent')
+                  quill.setSelection(insertPos + transliterated.length, 0, 'silent')
+                }
+              }
+            } else if (insertedText.length > 1) {
               const transliterated = transliterate(insertedText)
               if (transliterated !== insertedText) {
-                quill.deleteText(insertPos, 1, 'silent')
+                quill.deleteText(insertPos, insertedText.length, 'silent')
                 quill.insertText(insertPos, transliterated, defaultFormat, 'silent')
                 quill.setSelection(insertPos + transliterated.length, 0, 'silent')
               }
             }
-          } else if (insertedText.length > 1) {
-            const transliterated = transliterate(insertedText)
-            if (transliterated !== insertedText) {
+          } else {
+            const reversed = reverseTransliterate(insertedText)
+            if (reversed !== insertedText) {
               quill.deleteText(insertPos, insertedText.length, 'silent')
-              quill.insertText(insertPos, transliterated, defaultFormat, 'silent')
-              quill.setSelection(insertPos + transliterated.length, 0, 'silent')
+              quill.insertText(insertPos, reversed, defaultFormat, 'silent')
+              quill.setSelection(insertPos + reversed.length, 0, 'silent')
             }
           }
         }
@@ -263,7 +272,7 @@ const onEditorLoad = (event: EditorLoadEvent) => {
       @click="closeSuggestions"
     ></div>
 
-    <div class="mt-3 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <div class="lg:hidden mt-3 px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
         <div class="flex items-center gap-1.5">
           <font-awesome-icon icon="fa-solid fa-text-width" class="text-blue-500 text-xs" />

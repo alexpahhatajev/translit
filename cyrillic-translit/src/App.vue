@@ -3,13 +3,15 @@ import { onMounted, ref } from 'vue'
 import TextEditor from '@/components/TextEditor.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import HelpPanel from '@/components/HelpPanel.vue'
+import KeyboardLayout from '@/components/KeyboardLayout.vue'
+import TextStats from '@/components/TextStats.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
 import { useClipboard } from '@/composables/useClipboard'
 
 const { init } = useDarkMode()
-const { translitEnabled, toggle: toggleTranslit } = useTranslit()
+const { translitEnabled, direction, toggle: toggleTranslit, toggleDirection } = useTranslit()
 const { spellCheckEnabled, errors, isChecking, toggle: toggleSpellCheck } = useSpellCheck()
 const { copyText } = useClipboard()
 
@@ -32,19 +34,33 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="flex items-center justify-between py-8">
-        <div class="w-32"></div>
-        <div class="flex items-center gap-3">
-          <img src="/favicon.svg" alt="Translit logo" class="w-10 h-10 logo-spin" />
-          <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100">TRANSLIT</h1>
-        </div>
-        <div class="w-32 flex justify-end">
-          <DarkModeToggle />
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-center justify-center py-8">
+        <div class="w-full max-w-2xl lg:max-w-[calc(42rem+16px+16rem)] flex items-center justify-center relative">
+          <div class="flex items-center gap-3">
+            <img src="/favicon.svg" alt="Translit logo" class="w-10 h-10 logo-spin" />
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100">TRANSLIT</h1>
+          </div>
+          <div class="absolute right-0">
+            <DarkModeToggle />
+          </div>
         </div>
       </div>
 
-      <div class="mb-4 flex items-center justify-center gap-3 text-sm">
+      <div class="mb-4 flex flex-wrap items-center justify-center gap-3 text-sm">
+        <button
+          @click="toggleDirection"
+          :class="[
+            'w-44 px-3 py-1 rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer hover:opacity-80',
+            direction === 'latin-to-cyrillic'
+              ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'
+              : 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200'
+          ]"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrows-left-right" />
+          <span>{{ direction === 'latin-to-cyrillic' ? 'A → Я' : 'Я → A' }}</span>
+        </button>
+
         <button
           @click="toggleTranslit"
           :class="[
@@ -99,9 +115,36 @@ onMounted(() => {
         </div>
       </Transition>
 
-      <TextEditor />
+      <div class="flex flex-col gap-4 justify-center items-center">
+        <div class="flex flex-col lg:flex-row gap-4 w-full justify-center items-center lg:items-start">
+          <div class="lg:hidden w-full max-w-2xl">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <font-awesome-icon icon="fa-solid fa-keyboard" class="text-cyan-500" />
+                <span class="font-medium text-gray-800 dark:text-gray-200 text-sm">Keyboard</span>
+              </div>
+              <KeyboardLayout />
+            </div>
+          </div>
+          <div class="w-full max-w-2xl">
+            <TextEditor />
+          </div>
+          <div class="hidden lg:flex lg:flex-col gap-3 w-64 shrink-0">
+            <div class="sticky top-4 space-y-3">
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  <font-awesome-icon icon="fa-solid fa-keyboard" class="text-cyan-500" />
+                  <span class="font-medium text-gray-800 dark:text-gray-200 text-sm">Keyboard</span>
+                </div>
+                <KeyboardLayout />
+              </div>
+              <TextStats />
+            </div>
+          </div>
+        </div>
 
-      <HelpPanel />
+        <HelpPanel />
+      </div>
 
       <footer class="mt-8 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
         <p>2026 MIT License - Free to use and modify</p>

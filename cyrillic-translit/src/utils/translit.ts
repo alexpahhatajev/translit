@@ -118,6 +118,23 @@ for (const [latin, cyrillic] of Object.entries(multiCharMap)) {
   }
 }
 
+const cyrillicToLatinMap: Record<string, string> = {
+  'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+  'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
+  'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+  'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+  'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch',
+  'ш': 'sh', 'щ': 'shch', 'ъ': '"', 'ы': 'y', 'ь': "'",
+  'э': 'e', 'ю': 'yu', 'я': 'ya',
+  'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D',
+  'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh', 'З': 'Z', 'И': 'I',
+  'Й': 'J', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N',
+  'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T',
+  'У': 'U', 'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 'Ч': 'Ch',
+  'Ш': 'Sh', 'Щ': 'Shch', 'Ъ': '"', 'Ы': 'Y', 'Ь': "'",
+  'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+}
+
 const multiCharStarters = new Set<string>()
 const multiCharSecondChars = new Map<string, string[]>()
 
@@ -254,4 +271,26 @@ export function transliterate(text: string): string {
 
 export function shouldTransliterate(char: string): boolean {
   return isLatinChar(char) || char === "'" || char === '"'
+}
+
+function isCyrillicChar(char: string): boolean {
+  return /^[а-яёА-ЯЁ]$/.test(char)
+}
+
+export function shouldReverseTransliterate(char: string): boolean {
+  return isCyrillicChar(char)
+}
+
+export function reverseTransliterate(text: string): string {
+  let result = ''
+
+  for (const char of text) {
+    if (char in cyrillicToLatinMap) {
+      result += cyrillicToLatinMap[char]
+    } else {
+      result += char
+    }
+  }
+
+  return result
 }

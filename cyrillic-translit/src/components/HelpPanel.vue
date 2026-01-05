@@ -84,7 +84,7 @@ const shortcuts = [
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mt-6">
+  <div class="w-full max-w-2xl lg:max-w-[calc(42rem+16px+16rem)]">
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div class="border-b border-gray-200 dark:border-gray-700">
           <button
@@ -238,6 +238,6 @@ const shortcuts = [
 
 .accordion-enter-to,
 .accordion-leave-from {
-  max-height: 500px;
+  max-height: 800px;
 }
 </style>
