@@ -1,8 +1,5 @@
-// Latin to Cyrillic transliteration mapping
-// Multi-character sequences must be checked first (longest match)
 
 const multiCharMap: Record<string, string> = {
-  // Multi-character combinations (case-sensitive)
   'shch': 'щ',
   'Shch': 'Щ',
   'SHCH': 'Щ',
@@ -45,7 +42,6 @@ const multiCharMap: Record<string, string> = {
 }
 
 const singleCharMap: Record<string, string> = {
-  // Lowercase
   'a': 'а',
   'b': 'б',
   'v': 'в',
@@ -97,33 +93,26 @@ const singleCharMap: Record<string, string> = {
   'W': 'В',
   'X': 'Кс',
   'Y': 'Ы',
-  // Special characters
-  "'": 'ь',  // soft sign
-  '"': 'ъ',  // hard sign
+  "'": 'ь',
+  '"': 'ъ',
 }
 
-// Sorted multi-char keys by length (longest first)
 const sortedMultiKeys = Object.keys(multiCharMap).sort((a, b) => b.length - a.length)
 
-// Reverse mapping: Cyrillic back to Latin (for multi-char sequences)
 const reverseSingleCharMap: Record<string, string> = {}
 for (const [latin, cyrillic] of Object.entries(singleCharMap)) {
-  // Only add single-char results (skip 'x' -> 'кс')
   if (cyrillic.length === 1) {
     reverseSingleCharMap[cyrillic] = latin
   }
 }
 
-// Characters that can start a multi-char sequence
 const multiCharStarters = new Set<string>()
-// Characters that can be second in a multi-char sequence (mapped from their Cyrillic form)
-const multiCharSecondChars = new Map<string, string[]>() // cyrillicFirst -> [latinSecond chars]
+const multiCharSecondChars = new Map<string, string[]>()
 
 for (const key of Object.keys(multiCharMap)) {
   const firstLatin = key.charAt(0)
   multiCharStarters.add(firstLatin)
 
-  // Get the Cyrillic equivalent of the first character
   const firstCyrillic = singleCharMap[firstLatin]
   if (firstCyrillic && key.length >= 2) {
     const secondLatin = key.charAt(1)
@@ -137,41 +126,26 @@ for (const key of Object.keys(multiCharMap)) {
   }
 }
 
-/**
- * Check if a character is a Latin letter (a-z, A-Z)
- */
 function isLatinChar(char: string): boolean {
   return /^[a-zA-Z]$/.test(char)
 }
 
-/**
- * Get the Latin equivalent of a Cyrillic character (if it was from single-char mapping)
- */
 export function getLatinFromCyrillic(cyrillic: string): string | undefined {
   return reverseSingleCharMap[cyrillic]
 }
 
-/**
- * Check if a Cyrillic char + new Latin char could form a multi-char sequence
- */
 export function canFormMultiChar(prevCyrillic: string, newLatin: string): boolean {
   const possibleSeconds = multiCharSecondChars.get(prevCyrillic)
   return possibleSeconds ? possibleSeconds.includes(newLatin) || possibleSeconds.includes(newLatin.toLowerCase()) : false
 }
 
-/**
- * Try to form a multi-char transliteration from previous Cyrillic + new Latin
- * Returns { result, charsToDelete } or null if no match
- */
 export function tryMultiCharTranslit(
   prevChars: string,
   newChar: string
 ): { result: string; charsToDelete: number } | null {
-  // Try to match up to 3 previous Cyrillic chars + new Latin char
   for (let lookback = Math.min(3, prevChars.length); lookback >= 1; lookback--) {
     const prevCyrillic = prevChars.slice(-lookback)
 
-    // Convert previous Cyrillic back to Latin
     let latinPrefix = ''
     let validPrefix = true
     for (const c of prevCyrillic) {
@@ -186,15 +160,12 @@ export function tryMultiCharTranslit(
 
     if (!validPrefix) continue
 
-    // Try to match latinPrefix + newChar against multi-char sequences
     const combined = latinPrefix + newChar
     for (const key of sortedMultiKeys) {
       if (combined === key || combined.toLowerCase() === key.toLowerCase()) {
-        // Check for case-sensitive match first
         if (multiCharMap[combined]) {
           return { result: multiCharMap[combined], charsToDelete: lookback }
         }
-        // Try with proper casing
         if (multiCharMap[key]) {
           return { result: multiCharMap[key], charsToDelete: lookback }
         }
@@ -214,10 +185,6 @@ export function tryMultiCharTranslit(
   return null
 }
 
-/**
- * Transliterate a string from Latin to Cyrillic
- * Non-Latin characters are left unchanged
- */
 export function transliterate(text: string): string {
   let result = ''
   let i = 0
@@ -225,7 +192,6 @@ export function transliterate(text: string): string {
   while (i < text.length) {
     let matched = false
 
-    // Try multi-character matches first (longest match wins)
     for (const key of sortedMultiKeys) {
       const slice = text.slice(i, i + key.length)
       if (slice === key) {
@@ -238,11 +204,9 @@ export function transliterate(text: string): string {
 
     if (!matched) {
       const char = text.charAt(i)
-      // Try single character match for Latin letters
       if (char in singleCharMap) {
         result += singleCharMap[char]
       } else {
-        // Keep non-Latin characters as-is (Cyrillic, Chinese, numbers, symbols, etc.)
         result += char
       }
       i++
@@ -252,9 +216,6 @@ export function transliterate(text: string): string {
   return result
 }
 
-/**
- * Check if a character should be transliterated
- */
 export function shouldTransliterate(char: string): boolean {
   return isLatinChar(char) || char === "'" || char === '"'
 }

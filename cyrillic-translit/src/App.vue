@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import TextEditor from '@/components/TextEditor.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import HelpPanel from '@/components/HelpPanel.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useTranslit } from '@/composables/useTranslit'
 import { useSpellCheck } from '@/composables/useSpellCheck'
@@ -66,6 +67,14 @@ onMounted(() => {
       </div>
 
       <TextEditor />
+
+      <!-- Help panel with translit rules -->
+      <HelpPanel />
+
+      <!-- Footer -->
+      <footer class="mt-8 pb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>2026 MIT License - Free to use and modify</p>
+      </footer>
     </div>
   </div>
 </template>
