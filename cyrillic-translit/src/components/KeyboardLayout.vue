@@ -31,15 +31,15 @@ const keyboardRows = [
   ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
 ]
 
-const multiCharKeys = ['sh', 'ch', 'zh', 'ts', 'yu', 'ya', 'yo', 'kh', 'shch']
+const multiCharKeys = ['sh', 'ch', 'zh', 'ts', 'yu', 'ya', 'yo', 'jo', 'kh', 'shch']
 const multiCharMappings: Record<string, string> = {
   'sh': 'ш', 'ch': 'ч', 'zh': 'ж', 'ts': 'ц',
-  'yu': 'ю', 'ya': 'я', 'yo': 'ё', 'kh': 'х', 'shch': 'щ',
+  'yu': 'ю', 'ya': 'я', 'yo': 'ё', 'jo': 'ё', 'kh': 'х', 'shch': 'щ',
 }
 
 const multiCharMappingsUpper: Record<string, string> = {
   'Sh': 'Ш', 'Ch': 'Ч', 'Zh': 'Ж', 'Ts': 'Ц',
-  'Yu': 'Ю', 'Ya': 'Я', 'Yo': 'Ё', 'Kh': 'Х', 'Shch': 'Щ',
+  'Yu': 'Ю', 'Ya': 'Я', 'Yo': 'Ё', 'Jo': 'Ё', 'Kh': 'Х', 'Shch': 'Щ',
 }
 
 const specialKeys = [

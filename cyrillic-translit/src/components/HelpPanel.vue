@@ -36,7 +36,7 @@ const multiCharRules = [
   { latin: 'yu', cyrillic: 'ю' },
   { latin: 'ya', cyrillic: 'я' },
   { latin: 'yo', cyrillic: 'ё' },
-  { latin: 'ye', cyrillic: 'е' },
+  { latin: 'jo', cyrillic: 'ё' },
   { latin: 'kh', cyrillic: 'х' },
   { latin: 'ja', cyrillic: 'я' },
   { latin: 'ju', cyrillic: 'ю' },
